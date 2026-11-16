@@ -136,4 +136,3 @@ cd frontend && npx tsc --noEmit && npm run lint && npm run build
 | 21 | [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)           | Production checklist, DB sync, healthcheck & backups |
 | 22 | [ENVIRONMENT_VARIABLES.md](docs/ENVIRONMENT_VARIABLES.md) | `.env` keys & fail-closed startup secret checks      |
 | 23 | [CHANGELOG.md](docs/CHANGELOG.md)                         | Release history from `v1.0.0` to `v1.3.0`            |
-"# Icon-Fitness-Gym" 

@@ -3,8 +3,15 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-import * as cookieParser from 'cookie-parser';
-import { json, urlencoded, Request, Response, NextFunction } from 'express';
+import * as cookieParserPkg from 'cookie-parser';
+import {
+  json,
+  urlencoded,
+  Request,
+  Response,
+  NextFunction,
+  RequestHandler,
+} from 'express';
 import { gzipSync } from 'zlib';
 import { AppModule } from './app.module';
 import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -54,7 +61,13 @@ async function bootstrap() {
         : false,
     }),
   );
-  app.use(cookieParser());
+  const createCookieParser =
+    (
+      cookieParserPkg as unknown as {
+        default?: () => RequestHandler;
+      }
+    ).default ?? (cookieParserPkg as unknown as () => RequestHandler);
+  app.use(createCookieParser());
 
   const smallJsonParser = json({ limit: '1mb' });
   const largeUploadJsonParser = json({ limit: '10mb' });

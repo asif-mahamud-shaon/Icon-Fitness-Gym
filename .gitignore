@@ -77,3 +77,4 @@ backend/prisma/*.db-journal
 
 # Local uploads fallback
 backend/uploads/
+.neon
