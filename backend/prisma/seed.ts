@@ -30,6 +30,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
 const dbUrl =
+  process.env.DATABASE_URL?.trim() ||
   'postgresql://postgres:1234@localhost:5432/Icon-Fitness-Gym?schema=public';
 process.env.DATABASE_URL = dbUrl;
 
