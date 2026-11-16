@@ -40,7 +40,7 @@ async function bootstrap() {
     configService.get<string>('CORS_ORIGIN') || 'http://localhost:3000';
   const corsOrigins = corsOrigin
     .split(',')
-    .map((o) => o.trim())
+    .map((o) => o.trim().replace(/\/+$/, ''))
     .filter(Boolean);
   const isHttpsDeployment = corsOrigins.some((o) => o.startsWith('https://'));
 

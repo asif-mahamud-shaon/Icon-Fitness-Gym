@@ -1,5 +1,8 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+export const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'
+)
+  .trim()
+  .replace(/\/+$/, '');
 
 const ACCESS_TOKEN_KEY = 'ifg_access_token';
 const REFRESH_TOKEN_KEY = 'ifg_refresh_token';
