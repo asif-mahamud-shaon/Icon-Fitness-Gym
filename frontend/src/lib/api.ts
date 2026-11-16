@@ -244,12 +244,35 @@ export async function apiFetch<T = any>(
         cache: options.cache || 'no-store',
       });
     } catch (networkErr: any) {
-      const originInfo =
-        typeof window !== 'undefined' ? window.location.origin : 'server';
-      throw new ApiError(
-        `${networkErr?.message || 'Failed to fetch'} (${baseUrl}). Ensure backend is awake and CORS_ORIGIN allows ${originInfo}.`,
-        0,
-      );
+      const canFallbackToProxy =
+        typeof window !== 'undefined' &&
+        window.location.hostname !== 'localhost' &&
+        window.location.hostname !== '127.0.0.1' &&
+        !endpoint.startsWith('http') &&
+        baseUrl !== '/api/v1';
+
+      if (canFallbackToProxy) {
+        try {
+          const proxyUrl = `/api/v1${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+          response = await fetch(proxyUrl, {
+            ...fetchOptions,
+            headers,
+            cache: options.cache || 'no-store',
+          });
+        } catch {
+          throw new ApiError(
+            `${networkErr?.message || 'Failed to fetch'} (${baseUrl}). Ensure backend is awake and CORS_ORIGIN allows ${window.location.origin}.`,
+            0,
+          );
+        }
+      } else {
+        const originInfo =
+          typeof window !== 'undefined' ? window.location.origin : 'server';
+        throw new ApiError(
+          `${networkErr?.message || 'Failed to fetch'} (${baseUrl}). Ensure backend is awake and CORS_ORIGIN allows ${originInfo}.`,
+          0,
+        );
+      }
     }
 
     if (response.status === 401 && retry && !endpoint.includes('/auth/login')) {

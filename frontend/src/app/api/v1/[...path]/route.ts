@@ -53,6 +53,8 @@ async function proxyToBackend(
   if (accept) forwardHeaders.set('accept', accept);
   const deviceKey = request.headers.get('x-device-api-key');
   if (deviceKey) forwardHeaders.set('x-device-api-key', deviceKey);
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) forwardHeaders.set('x-forwarded-for', forwardedFor);
 
   try {
     const method = request.method.toUpperCase();
