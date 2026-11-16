@@ -1,0 +1,1364 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  STAFF
+  TRAINER
+  MEMBER
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING_APPROVAL
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum PlanDurationType {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+  CUSTOM_DAYS
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED_PAID
+  PARTIALLY_PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BKASH
+  NAGAD
+  ROCKET
+  BANK_TRANSFER
+  POS_CARD
+  ONLINE_GATEWAY
+}
+
+enum WorkoutGoal {
+  WEIGHT_LOSS
+  MUSCLE_BUILDING
+  STRENGTH_TRAINING
+  FITNESS_IMPROVEMENT
+  BEGINNER
+  CUSTOM
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum DayOfWeek {
+  SATURDAY
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  WAITLISTED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum GalleryCategory {
+  FACILITY
+  EQUIPMENT
+  TRAINING
+  EVENTS
+  TRANSFORMATIONS
+}
+
+enum InquiryStatus {
+  NEW
+  IN_PROGRESS
+  CONTACTED
+  RESOLVED
+  CLOSED
+}
+
+enum NotificationType {
+  MEMBERSHIP
+  BOOKING
+  PAYMENT
+  WORKOUT
+  ANNOUNCEMENT
+  ACCESS_CONTROL
+  SECURITY_ALERT
+  SYSTEM
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+  DEGRADED
+}
+
+enum DeviceVendorType {
+  SIMULATED_TERMINAL
+  GENERIC_REST_WEBHOOK
+  ZKTECO_COMPATIBLE
+  HIKVISION_ISAPI_COMPATIBLE
+  SUPREMA_COMPATIBLE
+}
+
+enum BiometricEnrollmentStatus {
+  NOT_ENROLLED
+  PENDING_CONSENT
+  ENROLLED
+  REVOKED
+  DELETED
+}
+
+enum GymSessionType {
+  MALE_SESSION
+  FEMALE_SESSION
+}
+
+enum SessionExceptionType {
+  HOLIDAY
+  TEMPORARY_CLOSURE
+  SPECIAL_EVENT
+  MODIFIED_HOURS
+}
+
+enum TrainerPresenceStatus {
+  ASSIGNED
+  PRESENT
+  ABSENT
+  LATE
+  UNAVAILABLE
+  REPLACED
+}
+
+enum AccessDecision {
+  GRANTED
+  DENIED
+}
+
+enum AccessDenialCode {
+  FACE_NOT_RECOGNIZED
+  MEMBER_NOT_FOUND
+  ACCOUNT_INACTIVE
+  MEMBERSHIP_EXPIRED
+  MEMBERSHIP_NOT_ACTIVE
+  PAYMENT_PENDING
+  MEMBERSHIP_SUSPENDED
+  MEMBERSHIP_CANCELLED
+  FEMALE_SESSION_RESTRICTED
+  FEMALE_TRAINER_UNAVAILABLE
+  OUTSIDE_OPERATING_SESSION
+  BIOMETRIC_NOT_ENROLLED
+  SPOOF_DETECTED
+  DEVICE_UNAVAILABLE
+  SYSTEM_ERROR
+}
+
+enum VerificationMethod {
+  FACE_RECOGNITION
+  SIMULATED_BIOMETRIC
+  MANUAL_STAFF_VERIFICATION
+}
+
+enum AccessDirection {
+  ENTRY
+  EXIT
+}
+
+enum DoorCommandStatus {
+  UNLOCK_SENT
+  UNLOCK_CONFIRMED
+  LOCKED_DENIED
+  MANUAL_OVERRIDE
+  DEVICE_TIMEOUT
+  CONTROLLER_ERROR
+  EMERGENCY_EGRESS_INDEPENDENT
+}
+
+// ============================================================================
+// 1. IDENTITY & TOKENS
+// ============================================================================
+
+model User {
+  id                     String      @id @default(uuid())
+  email                  String      @unique
+  phone                  String      @unique
+  passwordHash           String
+  fullName               String
+  avatarUrl              String?
+  role                   Role        @default(MEMBER)
+  status                 UserStatus  @default(ACTIVE)
+  emailVerified          Boolean     @default(false)
+  permissionsJson        Json?
+  resetPasswordTokenHash String?
+  resetPasswordExpiresAt DateTime?
+  lastLoginAt            DateTime?
+  deletedAt              DateTime?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  memberProfile          MemberProfile?
+  trainerProfile         TrainerProfile?
+  refreshTokens          RefreshToken[]
+  notifications          Notification[]
+  auditLogs              AuditLog[]
+  activatedMemberships   Membership[]     @relation("ActivatedByUser")
+  verifiedPayments       Payment[]        @relation("VerifiedByUser")
+  issuedReceipts         PaymentReceipt[] @relation("IssuedByUser")
+  recordedAttendances    Attendance[]     @relation("RecordedByUser")
+  uploadedGalleryItems   Gallery[]        @relation("UploadedByUser")
+  assignedInquiries      ContactInquiry[] @relation("AssignedInquiryUser")
+  assignedCrmLeads       CrmLead[]        @relation("AssignedCrmLeads")
+  crmActivities          CrmActivity[]    @relation("CrmActivityActor")
+
+  @@index([role, status])
+  @@index([email])
+  @@index([phone])
+}
+
+model RefreshToken {
+  id                  String    @id @default(uuid())
+  userId              String
+  tokenHash           String    @unique
+  userAgent           String?
+  ipAddress           String?
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  replacedByTokenHash String?
+  createdAt           DateTime  @default(now())
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+// ============================================================================
+// 2. MEMBER & TRAINER PROFILES
+// ============================================================================
+
+model MemberProfile {
+  id                    String       @id @default(uuid())
+  userId                String       @unique
+  memberCode            String       @unique
+  dateOfBirth           DateTime?
+  gender                Gender?
+  address               String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  bloodGroup            String?
+  heightCm              Float?
+  weightKg              Float?
+  appUsername           String?
+  nidNumber             String?
+  rfidCardNumber        String?
+  facebookUrl           String?
+  fitnessGoal           WorkoutGoal? @default(FITNESS_IMPROVEMENT)
+  medicalConditions     String?
+  assignedTrainerId     String?
+  joinedAt              DateTime     @default(now())
+  notes                 String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  user                  User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedTrainer       TrainerProfile?           @relation("TrainerAssignedMembers", fields: [assignedTrainerId], references: [id], onDelete: SetNull)
+  memberships           Membership[]
+  payments              Payment[]
+  workoutAssignments    MemberWorkoutAssignment[]
+  bookings              Booking[]
+  attendances           Attendance[]
+  testimonials          Testimonial[]
+  biometricEnrollment   BiometricEnrollment?
+  accessEvents          AccessEvent[]
+  crmActivities         CrmActivity[]
+
+  @@index([assignedTrainerId])
+  @@index([memberCode])
+}
+
+model TrainerProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  slug             String   @unique
+  gender           Gender   @default(MALE)
+  headline         String
+  bio              String
+  specializations  String[]
+  qualifications   String[]
+  experienceYears  Int      @default(1)
+  availabilityJson Json?
+  isFeatured       Boolean  @default(false)
+  isActive         Boolean  @default(true)
+  instagramUrl     String?
+  facebookUrl      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user                       User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedMembers            MemberProfile[]            @relation("TrainerAssignedMembers")
+  workoutPrograms            WorkoutProgram[]           @relation("AuthoredWorkouts")
+  workoutAssignments         MemberWorkoutAssignment[]  @relation("AssignedByTrainer")
+  classSchedules             ClassSchedule[]
+  sessionAssignments         SessionTrainerAssignment[] @relation("PrimarySessionTrainer")
+  replacementAssignments     SessionTrainerAssignment[] @relation("ReplacementSessionTrainer")
+  trainerAttendances         TrainerAttendance[]        @relation("TrainerAttendancePrimary")
+  replacementAttendances     TrainerAttendance[]        @relation("TrainerAttendanceReplacement")
+
+  @@index([isActive, isFeatured])
+  @@index([gender, isActive])
+  @@index([slug])
+}
+
+// ============================================================================
+// 3. MEMBERSHIP PLANS, MEMBERSHIPS & PAYMENTS
+// ============================================================================
+
+model MembershipPlan {
+  id                      String           @id @default(uuid())
+  name                    String
+  slug                    String           @unique
+  description             String
+  durationDays            Int
+  durationType            PlanDurationType @default(MONTHLY)
+  priceBdt                Decimal          @db.Decimal(10, 2)
+  admissionFeeBdt         Decimal          @default(0) @db.Decimal(10, 2)
+  discountPercent         Int              @default(0)
+  discountBdt             Decimal          @default(0) @db.Decimal(10, 2)
+  discountLabel           String?
+  currency                String           @default("BDT")
+  benefits                String[]
+  eligibilityConditions   String?
+  renewalRules            String?
+  maxClassesPerWeek       Int              @default(6)
+  includesPersonalTrainer Boolean          @default(false)
+  isFeatured              Boolean          @default(false)
+  isActive                Boolean          @default(true)
+  isPublic                Boolean          @default(true)
+  sortOrder               Int              @default(0)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  memberships             Membership[]
+
+  @@index([isActive, isPublic, sortOrder])
+}
+
+model Membership {
+  id                   String           @id @default(uuid())
+  memberProfileId      String
+  planId               String
+  previousMembershipId String?
+  startDate            DateTime
+  endDate              DateTime
+  status               MembershipStatus @default(PENDING)
+  autoRenewRequested   Boolean          @default(false)
+  renewalNotes         String?
+  activatedByUserId    String?
+  activationDate       DateTime?
+  cancellationReason   String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  memberProfile        MemberProfile    @relation(fields: [memberProfileId], references: [id], onDelete: Restrict)
+  plan                 MembershipPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  previousMembership   Membership?      @relation("MembershipRenewalHistory", fields: [previousMembershipId], references: [id], onDelete: SetNull)
+  renewedMemberships   Membership[]     @relation("MembershipRenewalHistory")
+  activatedByUser      User?            @relation("ActivatedByUser", fields: [activatedByUserId], references: [id], onDelete: SetNull)
+  payments             Payment[]
+  accessEvents         AccessEvent[]
+
+  @@index([memberProfileId, status])
+  @@index([status, endDate])
+}
+
+model Payment {
+  id                   String          @id @default(uuid())
+  memberProfileId      String
+  membershipId         String?
+  amountBdt            Decimal         @db.Decimal(10, 2)
+  discountBdt          Decimal         @default(0) @db.Decimal(10, 2)
+  netAmountBdt         Decimal         @db.Decimal(10, 2)
+  currency             String          @default("BDT")
+  paymentMethod        PaymentMethod   @default(CASH)
+  transactionReference String?
+  senderPhone          String?
+  status               PaymentStatus   @default(PENDING)
+  dueDate              DateTime?
+  paidAt               DateTime?
+  verifiedByUserId     String?
+  verifiedAt           DateTime?
+  refundedAmountBdt    Decimal?        @db.Decimal(10, 2)
+  refundReason         String?
+  notes                String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  memberProfile        MemberProfile   @relation(fields: [memberProfileId], references: [id], onDelete: Restrict)
+  membership           Membership?     @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  verifiedByUser       User?           @relation("VerifiedByUser", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+  receipt              PaymentReceipt?
+
+  @@index([memberProfileId, status])
+  @@index([status, paidAt])
+  @@index([transactionReference])
+}
+
+model PaymentReceipt {
+  id              String        @id @default(uuid())
+  paymentId       String        @unique
+  receiptNumber   String        @unique
+  issuedToName    String
+  issuedToEmail   String
+  issuedToPhone   String
+  planName        String?
+  amountPaidBdt   Decimal       @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod
+  issuedByUserId  String?
+  issuedAt        DateTime      @default(now())
+  receiptDataJson Json?
+  createdAt       DateTime      @default(now())
+
+  payment         Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  issuedByUser    User?         @relation("IssuedByUser", fields: [issuedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([receiptNumber])
+}
+
+// ============================================================================
+// 4. EXERCISES & WORKOUT PROGRAMS
+// ============================================================================
+
+model Exercise {
+  id                String            @id @default(uuid())
+  name              String
+  slug              String            @unique
+  targetMuscleGroup String
+  equipmentRequired String?
+  difficulty        DifficultyLevel   @default(INTERMEDIATE)
+  instructions      String
+  videoUrl          String?
+  imageUrl          String?
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  workoutExercises  WorkoutExercise[]
+
+  @@index([targetMuscleGroup, isActive])
+}
+
+model WorkoutProgram {
+  id                 String                    @id @default(uuid())
+  title              String
+  slug               String                    @unique
+  description        String
+  goal               WorkoutGoal               @default(FITNESS_IMPROVEMENT)
+  difficulty         DifficultyLevel           @default(INTERMEDIATE)
+  durationWeeks      Int                       @default(8)
+  daysPerWeek        Int                       @default(4)
+  isPublic           Boolean                   @default(true)
+  isActive           Boolean                   @default(true)
+  createdByTrainerId String?
+  coverImageUrl      String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  createdByTrainer   TrainerProfile?           @relation("AuthoredWorkouts", fields: [createdByTrainerId], references: [id], onDelete: SetNull)
+  exercises          WorkoutExercise[]
+  assignments        MemberWorkoutAssignment[]
+
+  @@index([goal, isPublic, isActive])
+}
+
+model WorkoutExercise {
+  id               String         @id @default(uuid())
+  workoutProgramId String
+  exerciseId       String
+  dayNumber        Int            @default(1)
+  orderIndex       Int            @default(1)
+  sets             Int            @default(3)
+  reps             String         @default("10-12")
+  restSeconds      Int            @default(60)
+  tempo            String?
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  workoutProgram   WorkoutProgram @relation(fields: [workoutProgramId], references: [id], onDelete: Cascade)
+  exercise         Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([workoutProgramId, dayNumber, orderIndex])
+}
+
+model MemberWorkoutAssignment {
+  id                   String          @id @default(uuid())
+  memberProfileId      String
+  workoutProgramId     String
+  assignedByTrainerId  String?
+  startDate            DateTime        @default(now())
+  endDate              DateTime?
+  isActive             Boolean         @default(true)
+  trainerNotes         String?
+  memberProgressNotes  String?
+  completionPercentage Int             @default(0)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  memberProfile        MemberProfile   @relation(fields: [memberProfileId], references: [id], onDelete: Cascade)
+  workoutProgram       WorkoutProgram  @relation(fields: [workoutProgramId], references: [id], onDelete: Cascade)
+  assignedByTrainer    TrainerProfile? @relation("AssignedByTrainer", fields: [assignedByTrainerId], references: [id], onDelete: SetNull)
+
+  @@index([memberProfileId, isActive])
+}
+
+// ============================================================================
+// 5. CLASSES, SCHEDULES, BOOKINGS & ATTENDANCE
+// ============================================================================
+
+model GymClass {
+  id              String          @id @default(uuid())
+  title           String
+  slug            String          @unique
+  description     String
+  category        String
+  durationMinutes Int             @default(60)
+  defaultCapacity Int             @default(20)
+  difficulty      DifficultyLevel @default(ALL_LEVELS)
+  coverImageUrl   String?
+  isPublished     Boolean         @default(true)
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  schedules       ClassSchedule[]
+
+  @@index([isPublished, isActive])
+}
+
+model ClassSchedule {
+  id                      String         @id @default(uuid())
+  gymClassId              String
+  trainerProfileId        String
+  dayOfWeek               DayOfWeek
+  specificDate            DateTime?
+  startTime               String         // Format: "HH:mm" e.g. "07:00"
+  endTime                 String         // Format: "HH:mm" e.g. "08:00"
+  roomOrZone              String         @default("Main Studio")
+  capacity                Int            @default(20)
+  bookedCount             Int            @default(0)
+  cancellationCutoffHours Int            @default(2)
+  isPublished             Boolean        @default(true)
+  isCancelled             Boolean        @default(false)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  gymClass                GymClass       @relation(fields: [gymClassId], references: [id], onDelete: Cascade)
+  trainerProfile          TrainerProfile @relation(fields: [trainerProfileId], references: [id], onDelete: Restrict)
+  bookings                Booking[]
+  attendances             Attendance[]
+
+  @@index([dayOfWeek, isPublished, isCancelled])
+  @@index([trainerProfileId])
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  classScheduleId    String
+  memberProfileId    String
+  sessionDate        DateTime      // Normalized date of the session (00:00:00 UTC)
+  status             BookingStatus @default(CONFIRMED)
+  bookedAt           DateTime      @default(now())
+  cancelledAt        DateTime?
+  cancellationReason String?
+  checkedInAt        DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  classSchedule      ClassSchedule @relation(fields: [classScheduleId], references: [id], onDelete: Cascade)
+  memberProfile      MemberProfile @relation(fields: [memberProfileId], references: [id], onDelete: Cascade)
+  attendance         Attendance?
+
+  @@unique([classScheduleId, memberProfileId, sessionDate])
+  @@index([memberProfileId, status])
+  @@index([classScheduleId, sessionDate, status])
+}
+
+model Attendance {
+  id               String           @id @default(uuid())
+  classScheduleId  String
+  bookingId        String?          @unique
+  memberProfileId  String
+  sessionDate      DateTime
+  status           AttendanceStatus @default(PRESENT)
+  recordedByUserId String?
+  recordedAt       DateTime         @default(now())
+  remarks          String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  classSchedule    ClassSchedule    @relation(fields: [classScheduleId], references: [id], onDelete: Cascade)
+  booking          Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  memberProfile    MemberProfile    @relation(fields: [memberProfileId], references: [id], onDelete: Cascade)
+  recordedByUser   User?            @relation("RecordedByUser", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([classScheduleId, memberProfileId, sessionDate])
+  @@index([classScheduleId, sessionDate])
+}
+
+// ============================================================================
+// 6. FACILITIES, GALLERY, TESTIMONIALS, INQUIRIES, NOTIFICATIONS, SETTINGS, AUDIT
+// ============================================================================
+
+model Facility {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  category    String
+  description String
+  features    String[]
+  imageUrl    String?
+  isPublished Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished, sortOrder])
+}
+
+model Gallery {
+  id               String          @id @default(uuid())
+  title            String
+  caption          String?
+  mediaType        MediaType       @default(IMAGE)
+  mediaUrl         String
+  thumbnailUrl     String?
+  category         GalleryCategory @default(FACILITY)
+  isPlaceholder    Boolean         @default(true)
+  isPublished      Boolean         @default(true)
+  sortOrder        Int             @default(0)
+  uploadedByUserId String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  uploadedByUser   User?           @relation("UploadedByUser", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([category, isPublished, sortOrder])
+}
+
+model Testimonial {
+  id              String         @id @default(uuid())
+  authorName      String
+  authorRole      String?
+  memberProfileId String?
+  rating          Int            @default(5)
+  content         String
+  avatarUrl       String?
+  isApproved      Boolean        @default(false)
+  isPublished     Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  memberProfile   MemberProfile? @relation(fields: [memberProfileId], references: [id], onDelete: SetNull)
+
+  @@index([isApproved, isPublished])
+}
+
+model ContactInquiry {
+  id               String        @id @default(uuid())
+  fullName         String
+  email            String
+  phone            String
+  subject          String
+  message          String
+  interestedPlan   String?
+  status           InquiryStatus @default(NEW)
+  assignedToUserId String?
+  internalNotes    String?
+  resolvedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  assignedToUser   User?         @relation("AssignedInquiryUser", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType @default(SYSTEM)
+  title     String
+  message   String
+  linkUrl   String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+}
+
+model GymSettings {
+  id                        String   @id @default(uuid())
+  singletonKey              String   @unique @default("DEFAULT")
+  gymName                   String   @default("Icon Fitness Gym")
+  tagline                   String   @default("Discipline. Strength. Performance in Ashkona, Dhaka.")
+  description               String   @default("Icon Fitness Gym is a premier strength, conditioning, and athletic training facility located in Ashkona, Dakshinkhan, Dhaka, Bangladesh.")
+  addressLine               String   @default("Ashkona Main Road, Dakshinkhan, Dhaka-1230, Bangladesh")
+  area                      String   @default("Ashkona, Dakshinkhan")
+  city                      String   @default("Dhaka")
+  country                   String   @default("Bangladesh")
+  phonePrimary              String   @default("[Configure Official Phone in Admin Settings]")
+  phoneSecondary            String?
+  whatsappNumber            String   @default("[Configure Official WhatsApp in Admin Settings]")
+  emailOfficial             String   @default("info@iconfitnessgym.com")
+  googleMapsEmbedUrl        String   @default("https://www.google.com/maps?q=Ashkona,Dhaka,Bangladesh&output=embed")
+  openingHoursJson          Json
+  socialLinksJson           Json
+  policiesJson              Json
+  allowSelfRegistration     Boolean  @default(true)
+  requireManualApproval     Boolean  @default(false)
+  bookingCutoffHoursDefault Int      @default(2)
+  maxActiveBookingsMember   Int      @default(5)
+  currencyCode              String   @default("BDT")
+  currencySymbol            String   @default("৳")
+  isUsingPlaceholderData    Boolean  @default(true)
+  websiteConfigJson         Json?
+  updatedAt                 DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actorRole   Role?
+  action      String
+  entityType  String
+  entityId    String?
+  summary     String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  actorUser   User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId, createdAt])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// 7. SMART FACE RECOGNITION, ACCESS CONTROL & GENDER-BASED GYM SESSIONS
+// ============================================================================
+
+model AccessDevice {
+  id                    String                @id @default(uuid())
+  deviceCode            String                @unique
+  name                  String
+  locationZone          String                @default("Ashkona Main Entrance")
+  vendorType            DeviceVendorType      @default(SIMULATED_TERMINAL)
+  direction             AccessDirection       @default(ENTRY)
+  ipAddress             String?
+  doorControllerId      String?
+  doorUnlockDurationSec Int                   @default(5)
+  apiKeyHash            String
+  hmacSecretEncrypted   String?
+  isSimulated           Boolean               @default(true)
+  isActive              Boolean               @default(true)
+  status                DeviceStatus          @default(ONLINE)
+  lastHeartbeatAt       DateTime?
+  firmwareVersion       String?               @default("SIM-FW-1.0.0")
+  capabilitiesJson      Json?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  accessEvents          AccessEvent[]
+  doorControllerEvents  DoorControllerEvent[]
+  trainerAttendances    TrainerAttendance[]
+  biometricEnrollments  BiometricEnrollment[]
+
+  @@index([status, isActive])
+  @@index([deviceCode])
+}
+
+model BiometricEnrollment {
+  id                      String                    @id @default(uuid())
+  memberProfileId         String                    @unique
+  status                  BiometricEnrollmentStatus @default(NOT_ENROLLED)
+  consentGranted          Boolean                   @default(false)
+  consentGrantedAt        DateTime?
+  consentVersion          String                    @default("v1.0-BD-BIOMETRIC-POLICY")
+  consentIpAddress        String?
+  encryptedTemplateCipher String?
+  templateHash            String?                   @unique
+  templateVersion         String                    @default("FACENET-512-V1")
+  livenessVerified        Boolean                   @default(false)
+  qualityScore            Float?
+  enrolledByUserId        String?
+  enrolledDeviceId        String?
+  enrolledAt              DateTime?
+  lastVerifiedAt          DateTime?
+  revokedAt               DateTime?
+  revocationReason        String?
+  retentionExpiresAt      DateTime?
+  recentPhotoDataUrl      String?
+  facePhotoUploadedAt     DateTime?
+  verificationProfileJson Json?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  memberProfile           MemberProfile             @relation(fields: [memberProfileId], references: [id], onDelete: Cascade)
+  enrolledDevice          AccessDevice?             @relation(fields: [enrolledDeviceId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([templateHash])
+}
+
+model GymSession {
+  id                       String                     @id @default(uuid())
+  name                     String
+  code                     String                     @unique
+  sessionType              GymSessionType
+  dayOfWeek                DayOfWeek
+  startTime                String                     // Format: "HH:mm" in Asia/Dhaka
+  endTime                  String                     // Format: "HH:mm" in Asia/Dhaka
+  timezone                 String                     @default("Asia/Dhaka")
+  requiresFemaleTrainer    Boolean                    @default(false)
+  allowFemaleInMaleSession Boolean                    @default(true)
+  maxCapacity              Int                        @default(60)
+  gracePeriodMinutes       Int                        @default(10)
+  accessRulesNotes         String?
+  isActive                 Boolean                    @default(true)
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+
+  trainerAssignments       SessionTrainerAssignment[]
+  trainerAttendances       TrainerAttendance[]
+  accessEvents             AccessEvent[]
+  exceptions               GymSessionException[]
+
+  @@index([dayOfWeek, sessionType, isActive])
+}
+
+model GymSessionException {
+  id                  String               @id @default(uuid())
+  gymSessionId        String?
+  exceptionDate       DateTime
+  exceptionType       SessionExceptionType @default(MODIFIED_HOURS)
+  title               String
+  description         String?
+  overrideSessionType GymSessionType?
+  overrideStartTime   String?
+  overrideEndTime     String?
+  isGymClosed         Boolean              @default(false)
+  createdByUserId     String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  gymSession          GymSession?          @relation(fields: [gymSessionId], references: [id], onDelete: Cascade)
+
+  @@index([exceptionDate, isGymClosed])
+}
+
+model SessionTrainerAssignment {
+  id                          String         @id @default(uuid())
+  gymSessionId                String
+  trainerProfileId            String
+  replacementTrainerProfileId String?
+  effectiveFrom               DateTime       @default(now())
+  effectiveTo                 DateTime?
+  isPrimary                   Boolean        @default(true)
+  isActive                    Boolean        @default(true)
+  notes                       String?
+  assignedByUserId            String?
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+
+  gymSession                  GymSession     @relation(fields: [gymSessionId], references: [id], onDelete: Cascade)
+  trainerProfile              TrainerProfile @relation("PrimarySessionTrainer", fields: [trainerProfileId], references: [id], onDelete: Restrict)
+  replacementTrainer          TrainerProfile? @relation("ReplacementSessionTrainer", fields: [replacementTrainerProfileId], references: [id], onDelete: SetNull)
+
+  @@index([gymSessionId, isActive])
+  @@index([trainerProfileId, isActive])
+}
+
+model TrainerAttendance {
+  id                          String                @id @default(uuid())
+  trainerProfileId            String
+  gymSessionId                String
+  sessionDate                 DateTime
+  status                      TrainerPresenceStatus @default(ASSIGNED)
+  checkedInAt                 DateTime?
+  checkedOutAt                DateTime?
+  verificationMethod          VerificationMethod    @default(MANUAL_STAFF_VERIFICATION)
+  deviceId                    String?
+  verifiedByUserId            String?
+  replacementTrainerProfileId String?
+  notes                       String?
+  createdAt                   DateTime              @default(now())
+  updatedAt                   DateTime              @updatedAt
+
+  trainerProfile              TrainerProfile        @relation("TrainerAttendancePrimary", fields: [trainerProfileId], references: [id], onDelete: Cascade)
+  replacementTrainer          TrainerProfile?       @relation("TrainerAttendanceReplacement", fields: [replacementTrainerProfileId], references: [id], onDelete: SetNull)
+  gymSession                  GymSession            @relation(fields: [gymSessionId], references: [id], onDelete: Cascade)
+  device                      AccessDevice?         @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@unique([trainerProfileId, gymSessionId, sessionDate])
+  @@index([gymSessionId, sessionDate, status])
+  @@index([trainerProfileId, sessionDate])
+}
+
+model AccessEvent {
+  id                           String               @id @default(uuid())
+  idempotencyKey               String               @unique
+  memberProfileId              String?
+  membershipId                 String?
+  deviceId                     String?
+  gymSessionId                 String?
+  direction                    AccessDirection      @default(ENTRY)
+  verificationMethod           VerificationMethod   @default(FACE_RECOGNITION)
+  isSimulated                  Boolean              @default(false)
+  recognitionScore             Float?
+  livenessPassed               Boolean              @default(true)
+  accessDecision               AccessDecision
+  denialCode                   AccessDenialCode?
+  denialReason                 String?
+  doorCommandStatus            DoorCommandStatus
+  sessionTypeSnapshot          GymSessionType?
+  femaleTrainerPresentSnapshot Boolean?
+  authorizedByUserId           String?
+  eventTimestamp               DateTime             @default(now())
+  metadataJson                 Json?
+  createdAt                    DateTime             @default(now())
+
+  memberProfile                MemberProfile?       @relation(fields: [memberProfileId], references: [id], onDelete: SetNull)
+  membership                   Membership?          @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  device                       AccessDevice?        @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  gymSession                   GymSession?          @relation(fields: [gymSessionId], references: [id], onDelete: SetNull)
+  doorControllerEvent          DoorControllerEvent?
+
+  @@index([eventTimestamp, accessDecision])
+  @@index([memberProfileId, eventTimestamp])
+  @@index([denialCode, eventTimestamp])
+  @@index([gymSessionId, eventTimestamp])
+  @@index([deviceId, eventTimestamp])
+}
+
+model DoorControllerEvent {
+  id                       String            @id @default(uuid())
+  accessEventId            String?           @unique
+  deviceId                 String
+  command                  String
+  status                   DoorCommandStatus
+  isSimulated              Boolean           @default(true)
+  responseTimeMs           Int?
+  controllerResponseCode   String?
+  errorMessage             String?
+  triggeredByUserId        String?
+  emergencyExitIndependent Boolean           @default(true)
+  createdAt                DateTime          @default(now())
+
+  accessEvent              AccessEvent?      @relation(fields: [accessEventId], references: [id], onDelete: SetNull)
+  device                   AccessDevice      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, createdAt])
+  @@index([status, createdAt])
+}
+
+model AccessControlSettings {
+  id                             String   @id @default(uuid())
+  singletonKey                   String   @unique @default("DEFAULT")
+  timezone                       String   @default("Asia/Dhaka")
+  enforceGenderSessions          Boolean  @default(true)
+  requireFemaleTrainerPresence   Boolean  @default(true)
+  allowFemaleInMaleSession       Boolean  @default(true)
+  blockEntryWhenNoActiveSession  Boolean  @default(false)
+  minFaceMatchConfidence         Float    @default(0.85)
+  requireLivenessDetection       Boolean  @default(true)
+  deviceHeartbeatTimeoutSec      Int      @default(90)
+  callbackReplayWindowSec        Int      @default(60)
+  biometricRetentionDays         Int      @default(365)
+  trainerCheckInAlertLeadMinutes Int      @default(15)
+  allowStaffManualOverride       Boolean  @default(true)
+  emergencyEgressNote            String   @default("Physical emergency exits and break-glass releases operate independently of software, database, network, or facial recognition status.")
+  updatedAt                      DateTime @updatedAt
+}
+
+// ============================================================================
+// 8. GYM GEAR, MERCHANDISE & SUPPLEMENTS STORE
+// ============================================================================
+
+enum StoreCategory {
+  BOTTLES
+  GLOVES
+  BELTS
+  SUPPLEMENTS
+  ACCESSORIES
+  APPAREL
+}
+
+enum StoreOrderStatus {
+  PENDING
+  CONFIRMED
+  READY_FOR_PICKUP
+  COMPLETED
+  CANCELLED
+}
+
+model StoreProduct {
+  id             String           @id @default(uuid())
+  name           String
+  slug           String           @unique
+  sku            String?          @unique
+  category       String           @default("ACCESSORIES")
+  brand          String?
+  description    String
+  buyingPriceBdt Decimal?         @db.Decimal(10, 2)
+  priceBdt       Decimal          @db.Decimal(10, 2)
+  compareAtBdt   Decimal?         @db.Decimal(10, 2)
+  stockQty       Int              @default(0)
+  unitLabel      String?          @default("1 pc")
+  imageUrl       String?
+  badgeText      String?
+  isFeatured     Boolean          @default(false)
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  orderItems     StoreOrderItem[]
+
+  @@index([category, isActive])
+  @@index([isFeatured, isActive])
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_BDT
+}
+
+model StoreDiscountCode {
+  id               String       @id @default(uuid())
+  code             String       @unique
+  description      String?
+  discountType     DiscountType @default(PERCENTAGE)
+  discountValue    Decimal      @db.Decimal(10, 2)
+  minOrderBdt      Decimal?     @db.Decimal(10, 2)
+  maxDiscountBdt   Decimal?     @db.Decimal(10, 2)
+  maxUses          Int?
+  usedCount        Int          @default(0)
+  validFrom        DateTime     @default(now())
+  validDays        Int          @default(7)
+  expiresAt        DateTime
+  isActive         Boolean      @default(true)
+  createdByUserId  String?
+  createdByName    String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([code, isActive])
+  @@index([expiresAt, isActive])
+}
+
+model StoreOrder {
+  id                   String           @id @default(uuid())
+  orderNumber          String           @unique
+  userId               String?
+  customerName         String
+  customerPhone        String
+  customerEmail        String?
+  memberCode           String?
+  paymentMethod        PaymentMethod    @default(CASH)
+  transactionReference String?
+  subtotalBdt          Decimal?         @db.Decimal(10, 2)
+  discountCode         String?
+  discountAmountBdt    Decimal          @default(0) @db.Decimal(10, 2)
+  deliveryFeeBdt       Decimal          @default(0) @db.Decimal(10, 2)
+  totalAmountBdt       Decimal          @db.Decimal(10, 2)
+  advancePaidBdt       Decimal          @default(0) @db.Decimal(10, 2)
+  isMemberVerified     Boolean          @default(false)
+  fulfillmentType      String           @default("PICKUP")
+  deliveryArea         String?
+  deliveryAddress      String?
+  status               StoreOrderStatus @default(PENDING)
+  pickupNote           String?
+  processedByUserId    String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  items                StoreOrderItem[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model StoreOrderItem {
+  id           String       @id @default(uuid())
+  orderId      String
+  productId    String
+  productName  String
+  unitCostBdt  Decimal?     @db.Decimal(10, 2)
+  unitPriceBdt Decimal      @db.Decimal(10, 2)
+  quantity     Int
+  subtotalBdt  Decimal      @db.Decimal(10, 2)
+  profitBdt    Decimal?     @db.Decimal(10, 2)
+
+  order        StoreOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      StoreProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ============================================================================
+// 9. GYM HRM, PAYROLL, UTILITY BILLS & ACCOUNTING
+// ============================================================================
+
+enum HrmDepartment {
+  TRAINING
+  FRONT_DESK
+  HOUSEKEEPING
+  SECURITY
+  MANAGEMENT
+}
+
+enum HrmEmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  INACTIVE
+}
+
+enum GymExpenseCategory {
+  ELECTRICITY
+  WATER
+  GAS
+  INTERNET
+  RENT
+  EQUIPMENT_MAINTENANCE
+  CLEANING_SUPPLIES
+  MARKETING
+  MISC
+}
+
+enum LedgerPaymentStatus {
+  PAID
+  PENDING
+}
+
+model HrmEmployee {
+  id                  String             @id @default(uuid())
+  employeeCode        String             @unique
+  fullName            String
+  phone               String
+  email               String?
+  designation         String
+  department          HrmDepartment      @default(FRONT_DESK)
+  baseSalaryBdt       Decimal            @db.Decimal(10, 2)
+  defaultAllowanceBdt Decimal            @default(0) @db.Decimal(10, 2)
+  joiningDate         DateTime           @default(now())
+  payoutAccount       String?
+  nidLast4            String?
+  status              HrmEmployeeStatus  @default(ACTIVE)
+  notes               String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  salaryPayments      HrmSalaryPayment[]
+
+  @@index([status, department])
+}
+
+model HrmSalaryPayment {
+  id            String              @id @default(uuid())
+  employeeId    String
+  monthKey      String
+  baseSalaryBdt Decimal             @db.Decimal(10, 2)
+  bonusBdt      Decimal             @default(0) @db.Decimal(10, 2)
+  overtimeBdt   Decimal             @default(0) @db.Decimal(10, 2)
+  deductionBdt  Decimal             @default(0) @db.Decimal(10, 2)
+  netPaidBdt    Decimal             @db.Decimal(10, 2)
+  paymentMethod PaymentMethod       @default(CASH)
+  paymentRef    String?
+  status        LedgerPaymentStatus @default(PAID)
+  paidAt        DateTime            @default(now())
+  paidByUserId  String?
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  employee      HrmEmployee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, monthKey])
+  @@index([monthKey, status])
+}
+
+model GymExpense {
+  id               String              @id @default(uuid())
+  title            String
+  category         GymExpenseCategory  @default(MISC)
+  vendorName       String?
+  billReference    String?
+  monthKey         String
+  amountBdt        Decimal             @db.Decimal(10, 2)
+  status           LedgerPaymentStatus @default(PAID)
+  paymentMethod    PaymentMethod       @default(CASH)
+  dueDate          DateTime?
+  paidAt           DateTime?           @default(now())
+  recordedByUserId String?
+  notes            String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([monthKey, category])
+  @@index([status, monthKey])
+}
+
+// ============================================================================
+// 10. GYM CRM, RETENTION RADAR & STAFF ACCOUNTABILITY
+// ============================================================================
+
+enum CrmLeadSource {
+  WALK_IN
+  WHATSAPP
+  FACEBOOK
+  PHONE_CALL
+  WEBSITE_INQUIRY
+  REFERRAL
+}
+
+enum CrmLeadStage {
+  NEW
+  TRIAL_BOOKED
+  FOLLOW_UP
+  NEGOTIATION
+  CONVERTED
+  LOST
+}
+
+enum CrmActivityChannel {
+  PHONE_CALL
+  WHATSAPP
+  IN_PERSON
+  SMS
+  SYSTEM_SYNC
+}
+
+enum CrmActivityOutcome {
+  ANSWERED
+  NO_ANSWER
+  CALLBACK_REQUESTED
+  PROMISED_TO_PAY
+  BOOKED_TRIAL
+  CONVERTED_OR_RENEWED
+  NOT_INTERESTED
+  LEFT_NOTE
+}
+
+model CrmLead {
+  id                 String        @id @default(uuid())
+  leadCode           String        @unique
+  fullName           String
+  phone              String
+  email              String?
+  source             CrmLeadSource @default(WALK_IN)
+  stage              CrmLeadStage  @default(NEW)
+  fitnessGoal        String?
+  interestedPlan     String?
+  assignedToUserId   String?
+  assignedStaffName  String?
+  referralMemberCode String?
+  nextFollowUpAt     DateTime?
+  lastContactedAt    DateTime?
+  lostReason         String?
+  convertedMemberId  String?
+  sourceInquiryId    String?       @unique
+  notes              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  assignedToUser     User?         @relation("AssignedCrmLeads", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  activities         CrmActivity[]
+
+  @@index([stage, nextFollowUpAt])
+  @@index([assignedToUserId, stage])
+  @@index([source, createdAt])
+}
+
+model CrmActivity {
+  id              String             @id @default(uuid())
+  leadId          String?
+  memberProfileId String?
+  channel         CrmActivityChannel @default(PHONE_CALL)
+  outcome         CrmActivityOutcome @default(ANSWERED)
+  summary         String
+  nextFollowUpAt  DateTime?
+  actorUserId     String?
+  actorName       String
+  createdAt       DateTime           @default(now())
+
+  lead            CrmLead?           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  memberProfile   MemberProfile?     @relation(fields: [memberProfileId], references: [id], onDelete: Cascade)
+  actorUser       User?              @relation("CrmActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, createdAt])
+  @@index([memberProfileId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+
+

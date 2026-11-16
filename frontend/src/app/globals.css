@@ -1,0 +1,421 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+html[data-theme='light'] {
+  --bg-obsidian: #f8fafc;
+  --bg-charcoal: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --accent-lime: #84cc16;
+  --accent-lime-hover: #65a30d;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-muted: #e2e8f0;
+}
+
+html[data-theme='dark'] {
+  --bg-obsidian: #090909;
+  --bg-charcoal: #141414;
+  --bg-surface: #1e1e1e;
+  --bg-elevated: #282828;
+  --accent-lime: #c7f464;
+  --accent-lime-hover: #d4f882;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --border-muted: #2a2a2a;
+}
+
+html {
+  background-color: var(--bg-obsidian);
+  color: var(--text-primary);
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg-obsidian);
+  color: var(--text-primary);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  overflow-x: clip;
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 420px;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .ifg-btn-primary::after {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   LIGHT MODE ADAPTIVE OVERRIDES FOR SHARED COMPONENTS & PORTAL SCREENS
+   ============================================================================ */
+html[data-theme='light'] .bg-\[\#090909\],
+html[data-theme='light'] .bg-\[\#0B0B0B\],
+html[data-theme='light'] .bg-\[\#0D0D0D\],
+html[data-theme='light'] .bg-\[\#111111\] {
+  background-color: #f8fafc !important;
+}
+html[data-theme='light'] .bg-\[\#090909\]\/60,
+html[data-theme='light'] .bg-\[\#090909\]\/80,
+html[data-theme='light'] .bg-\[\#090909\]\/85,
+html[data-theme='light'] .bg-\[\#090909\]\/95,
+html[data-theme='light'] .bg-\[\#0D0D0D\]\/98,
+html[data-theme='light'] .bg-\[\#141414\]\/95,
+html[data-theme='light'] .bg-\[\#141414\]\/98 {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+}
+html[data-theme='light'] .bg-\[\#141414\],
+html[data-theme='light'] .bg-\[\#141414\]\/50,
+html[data-theme='light'] .bg-\[\#141414\]\/60,
+html[data-theme='light'] .bg-\[\#171717\],
+html[data-theme='light'] .bg-\[\#171717\]\/50,
+html[data-theme='light'] .bg-\[\#171717\]\/60,
+html[data-theme='light'] .bg-\[\#171717\]\/70,
+html[data-theme='light'] .bg-\[\#171717\]\/90 {
+  background-color: #ffffff !important;
+}
+html[data-theme='light'] .bg-\[\#1B1F14\],
+html[data-theme='light'] .bg-\[\#1B2210\] {
+  background-color: rgba(132, 204, 22, 0.14) !important;
+}
+html[data-theme='light'] .bg-\[\#1C1C1C\],
+html[data-theme='light'] .bg-\[\#202020\],
+html[data-theme='light'] .bg-\[\#242424\],
+html[data-theme='light'] .bg-zinc-800,
+html[data-theme='light'] .bg-zinc-900 {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme='light'] .bg-\[\#2C2C2C\] {
+  background-color: #e2e8f0 !important;
+}
+html[data-theme='light'] [role='dialog'].bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(5px);
+}
+html[data-theme='light'] select,
+html[data-theme='light'] select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+html[data-theme='light'] input::placeholder,
+html[data-theme='light'] textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+html[data-theme='light'] .text-white {
+  color: #0f172a !important;
+}
+html[data-theme='light'] .text-white\/95,
+html[data-theme='light'] .text-white\/90,
+html[data-theme='light'] .text-white\/85,
+html[data-theme='light'] .text-white\/80,
+html[data-theme='light'] .text-\[\#F4F4F5\],
+html[data-theme='light'] .text-\[\#E4E4E7\],
+html[data-theme='light'] .text-zinc-200 {
+  color: #1e293b !important;
+}
+html[data-theme='light'] .text-white\/75,
+html[data-theme='light'] .text-white\/70,
+html[data-theme='light'] .text-\[\#D4D4D8\],
+html[data-theme='light'] .text-zinc-300 {
+  color: #334155 !important;
+}
+html[data-theme='light'] .text-\[\#A1A1AA\],
+html[data-theme='light'] .text-\[\#71717A\],
+html[data-theme='light'] .text-\[\#52525B\],
+html[data-theme='light'] .text-zinc-400,
+html[data-theme='light'] .text-zinc-500 {
+  color: #475569 !important;
+}
+html[data-theme='light'] .text-\[\#A1A1AA\]\/60 {
+  color: #64748b !important;
+}
+html[data-theme='light'] .text-emerald-200,
+html[data-theme='light'] .text-emerald-300,
+html[data-theme='light'] .text-emerald-400 {
+  color: #047857 !important;
+}
+html[data-theme='light'] .text-amber-200,
+html[data-theme='light'] .text-amber-300,
+html[data-theme='light'] .text-amber-400,
+html[data-theme='light'] .text-amber-400\/90 {
+  color: #b45309 !important;
+}
+html[data-theme='light'] .text-red-200,
+html[data-theme='light'] .text-red-200\/80,
+html[data-theme='light'] .text-red-300,
+html[data-theme='light'] .text-red-400,
+html[data-theme='light'] .text-rose-300,
+html[data-theme='light'] .text-rose-400 {
+  color: #be123c !important;
+}
+html[data-theme='light'] .text-sky-400 {
+  color: #0369a1 !important;
+}
+html[data-theme='light'] .text-pink-400 {
+  color: #be185d !important;
+}
+html[data-theme='light'] .border-zinc-700,
+html[data-theme='light'] .border-zinc-700\/60 {
+  border-color: #cbd5e1 !important;
+}
+html[data-theme='light'] .border-\[\#222222\],
+html[data-theme='light'] .border-\[\#262626\],
+html[data-theme='light'] .border-\[\#2C2C2C\],
+html[data-theme='light'] .border-\[\#303030\] {
+  border-color: #e2e8f0 !important;
+}
+html[data-theme='light'] .divide-\[\#2C2C2C\] > :not([hidden]) ~ :not([hidden]),
+html[data-theme='light'] .divide-\[\#303030\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Preserve dark backgrounds, white text & lime accents inside dark image overlays in Light Mode */
+html[data-theme='light'] .dark-media-card.bg-\[\#090909\],
+html[data-theme='light'] .dark-media-card .bg-\[\#090909\],
+html[data-theme='light'] .dark-media-card.bg-\[\#0B0B0B\],
+html[data-theme='light'] .dark-media-card .bg-\[\#0B0B0B\] {
+  background-color: #090909 !important;
+}
+html[data-theme='light'] .dark-media-card .bg-\[\#090909\]\/60,
+html[data-theme='light'] .dark-media-card .bg-\[\#090909\]\/80,
+html[data-theme='light'] .dark-media-card .bg-\[\#090909\]\/85,
+html[data-theme='light'] .dark-media-card .bg-\[\#090909\]\/95 {
+  background-color: rgba(9, 9, 9, 0.88) !important;
+}
+html[data-theme='light'] .dark-media-card .bg-\[\#141414\],
+html[data-theme='light'] .dark-media-card .bg-\[\#171717\] {
+  background-color: rgba(20, 20, 20, 0.9) !important;
+}
+html[data-theme='light'] .dark-media-card .bg-\[\#202020\],
+html[data-theme='light'] .dark-media-card .bg-\[\#242424\],
+html[data-theme='light'] .dark-media-card .bg-zinc-800 {
+  background-color: rgba(24, 24, 27, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+}
+html[data-theme='light'] .dark-media-card .border-zinc-700 {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+html[data-theme='light'] .keep-dark-text,
+html[data-theme='light'] .dark-media-card .text-white {
+  color: #ffffff !important;
+}
+html[data-theme='light'] .dark-media-card .text-white\/95,
+html[data-theme='light'] .dark-media-card .text-white\/90,
+html[data-theme='light'] .dark-media-card .text-white\/85,
+html[data-theme='light'] .dark-media-card .text-white\/80,
+html[data-theme='light'] .dark-media-card .text-\[\#F4F4F5\],
+html[data-theme='light'] .dark-media-card .text-\[\#E4E4E7\],
+html[data-theme='light'] .dark-media-card .text-zinc-200 {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+html[data-theme='light'] .dark-media-card .text-white\/75,
+html[data-theme='light'] .dark-media-card .text-white\/70,
+html[data-theme='light'] .dark-media-card .text-\[\#D4D4D8\],
+html[data-theme='light'] .dark-media-card .text-zinc-300 {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+html[data-theme='light'] .dark-media-card .text-zinc-400,
+html[data-theme='light'] .dark-media-card .text-\[\#A1A1AA\] {
+  color: #a1a1aa !important;
+}
+html[data-theme='light'] .dark-media-card .text-\[\#C7F464\] {
+  color: #c7f464 !important;
+}
+html[data-theme='light'] .text-\[\#C7F464\] {
+  color: #3f6212 !important;
+}
+
+/* Brand-matched Lime Hover States in Light Mode (No dark/black hover boxes!) */
+html[data-theme='light'] .hover\:bg-\[\#141414\]:hover,
+html[data-theme='light'] .hover\:bg-\[\#141414\]\/50:hover,
+html[data-theme='light'] .hover\:bg-\[\#171717\]:hover,
+html[data-theme='light'] .hover\:bg-\[\#171717\]\/60:hover,
+html[data-theme='light'] .hover\:bg-\[\#1E1E1E\]:hover,
+html[data-theme='light'] .hover\:bg-\[\#1F1F1F\]:hover,
+html[data-theme='light'] .hover\:bg-\[\#202020\]:hover,
+html[data-theme='light'] .hover\:bg-\[\#242424\]:hover,
+html[data-theme='light'] .hover\:bg-\[\#282828\]:hover,
+html[data-theme='light'] .hover\:bg-\[\#2E2E2E\]:hover,
+html[data-theme='light'] .hover\:bg-\[\#C7F464\]\/15:hover {
+  background-color: rgba(132, 204, 22, 0.18) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .dark-media-card .hover\:text-white:hover {
+  color: #ffffff !important;
+}
+
+html[data-theme='light'] .dark-media-card .hover\:bg-\[\#C7F464\]\/15:hover {
+  background-color: rgba(20, 20, 23, 0.96) !important;
+  color: #c7f464 !important;
+  border-color: #c7f464 !important;
+}
+
+html[data-theme='light'] .hover\:border-\[\#C7F464\]:hover {
+  border-color: #84cc16 !important;
+}
+
+html[data-theme='light'] .hover\:text-\[\#C7F464\]:hover {
+  color: #3f6212 !important;
+}
+
+html[data-theme='light'] .dark-media-card .hover\:text-\[\#C7F464\]:hover,
+html[data-theme='light'] .dark-media-card.group:hover .group-hover\:text-\[\#C7F464\] {
+  color: #c7f464 !important;
+}
+
+/* ============================================================================
+   60FPS GPU-ACCELERATED SMOOTH MARQUEE ANIMATION (ZERO JS MAIN-THREAD LAG)
+   ============================================================================ */
+@keyframes ifg-marquee-left {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.ifg-smooth-marquee {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: ifg-marquee-left 34s linear infinite;
+}
+
+.ifg-smooth-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* ============================================================================
+   KINETIC BUTTON SHIMMER & INTERACTIVE ELEVATION ANIMATIONS
+   ============================================================================ */
+@keyframes ifg-btn-sheen {
+  0% {
+    transform: translate3d(-130%, 0, 0) skewX(-20deg);
+  }
+  35%,
+  100% {
+    transform: translate3d(230%, 0, 0) skewX(-20deg);
+  }
+}
+
+.ifg-btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.ifg-btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.52),
+    transparent
+  );
+  transform: translate3d(-130%, 0, 0) skewX(-20deg);
+  animation: ifg-btn-sheen 4.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  pointer-events: none;
+}
+
+.ifg-btn-primary:hover::after {
+  animation-duration: 1.4s;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-obsidian);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c7f464;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dedicated clean 1-page A4 print layout for Official Payment Receipt */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.receipt-modal-open > :not(#receipt-print-portal) {
+    display: none !important;
+  }
+
+  #receipt-print-portal {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 12mm !important;
+    background: #ffffff !important;
+  }
+}

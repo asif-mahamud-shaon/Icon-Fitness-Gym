@@ -1,0 +1,19 @@
+{
+  "name": "icon-fitness-gym",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-Stack Website, Member Portal, Trainer Portal & Gym Management System for Icon Fitness Gym (Ashkona, Dhaka, Bangladesh)",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run start:dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "typecheck": "npm --prefix frontend run typecheck",
+    "test:backend": "npm --prefix backend test",
+    "test:e2e": "npm --prefix frontend run test:e2e",
+    "db:migrate": "npm --prefix backend run prisma:migrate",
+    "db:seed": "npm --prefix backend run prisma:seed"
+  }
+}
+
