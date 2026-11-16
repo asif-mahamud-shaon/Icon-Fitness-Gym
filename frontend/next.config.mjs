@@ -12,9 +12,9 @@ const nextConfig = (phase) => {
   const cspDirectives = [
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https:" + (isDev ? ` ${apiOrigin}` : ''),
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     `connect-src 'self' ${apiOrigin}${isDev ? ' http://localhost:4000 http://127.0.0.1:4000 ws://localhost:3000 ws://127.0.0.1:3000' : ''}`,
     "media-src 'self' blob:",
     "frame-src 'self' https://www.google.com https://maps.google.com",

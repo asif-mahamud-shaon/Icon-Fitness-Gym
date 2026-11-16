@@ -4,6 +4,9 @@
 
 :root,
 html[data-theme='light'] {
+  --font-display: 'Anton', Impact, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Space Grotesk', ui-monospace, SFMono-Regular, monospace;
   --bg-obsidian: #f8fafc;
   --bg-charcoal: #ffffff;
   --bg-surface: #ffffff;
