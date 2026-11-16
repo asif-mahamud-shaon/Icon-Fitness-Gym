@@ -4,6 +4,20 @@ export const API_BASE_URL = (
   .trim()
   .replace(/\/+$/, '');
 
+export function resolveApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const isLocalBrowser = host === 'localhost' || host === '127.0.0.1';
+    const pointsToLocalhost =
+      API_BASE_URL.startsWith('http://localhost') ||
+      API_BASE_URL.startsWith('http://127.0.0.1');
+    if (!isLocalBrowser && pointsToLocalhost) {
+      return '/api/v1';
+    }
+  }
+  return API_BASE_URL;
+}
+
 const ACCESS_TOKEN_KEY = 'ifg_access_token';
 const REFRESH_TOKEN_KEY = 'ifg_refresh_token';
 const USER_STORAGE_KEY = 'ifg_auth_user';
@@ -49,7 +63,7 @@ async function tryRefreshAccessToken(): Promise<string | null> {
   if (!refreshToken) return null;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const res = await fetch(`${resolveApiBaseUrl()}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -181,9 +195,10 @@ export async function apiFetch<T = any>(
   options: RequestInit & { fresh?: boolean; ttlMs?: number } = {},
   retry = true,
 ): Promise<T> {
+  const baseUrl = resolveApiBaseUrl();
   const url = endpoint.startsWith('http')
     ? endpoint
-    : `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    : `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
   const method = (options.method || 'GET').toUpperCase();
   const isGet = method === 'GET';
@@ -221,11 +236,21 @@ export async function apiFetch<T = any>(
     }
 
     const { fresh: _fresh, ttlMs: _ttl, ...fetchOptions } = options;
-    const response = await fetch(url, {
-      ...fetchOptions,
-      headers,
-      cache: options.cache || 'no-store',
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...fetchOptions,
+        headers,
+        cache: options.cache || 'no-store',
+      });
+    } catch (networkErr: any) {
+      const originInfo =
+        typeof window !== 'undefined' ? window.location.origin : 'server';
+      throw new ApiError(
+        `${networkErr?.message || 'Failed to fetch'} (${baseUrl}). Ensure backend is awake and CORS_ORIGIN allows ${originInfo}.`,
+        0,
+      );
+    }
 
     if (response.status === 401 && retry && !endpoint.includes('/auth/login')) {
       const newAccessToken = await tryRefreshAccessToken();
